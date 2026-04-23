@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fresh Cuts — AI Chatbot</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* API KEY BOX */
+    .api-box {
+      background: #fff;
+      border-radius: 14px;
+      padding: 14px 16px;
+      border: 1px solid #e0e0e0;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .api-box input {
+      flex: 1;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 7px 11px;
+      font-size: 12px;
+      outline: none;
+      color: #333;
+      font-family: monospace;
+    }
+
+    .api-box input:focus { border-color: #d4a017; }
+
+    .api-box button {
+      background: #d4a017;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .api-box button:hover { background: #b8891a; }
+
+    .api-label {
+      font-size: 11px;
+      color: #888;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .api-label a {
+      color: #d4a017;
+      text-decoration: none;
+    }
+
+    .api-label a:hover { text-decoration: underline; }
+
+    /* CHAT WINDOW */
+    .chat {
+      background: #fff;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      height: 580px;
+    }
+
+    /* HEADER */
+    .header {
+      background: #1a1a1a;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .header-icon {
+      width: 40px;
+      height: 40px;
+      background: #d4a017;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .header-info { flex: 1; }
+    .header-name { color: #fff; font-size: 15px; font-weight: 600; }
+    .header-status { color: #aaa; font-size: 11px; margin-top: 2px; display: flex; align-items: center; gap: 4px; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: #4caf50; }
+
+    /* MESSAGES */
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #f9f9f9;
+    }
+
+    .messages::-webkit-scrollbar { width: 4px; }
+    .messages::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+
+    .msg-row { display: flex; gap: 8px; }
+    .msg-row.user { flex-direction: row-reverse; }
+
+    .bot-av {
+      width: 28px; height: 28px;
+      background: #d4a017;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; flex-shrink: 0; margin-top: 2px;
+    }
+
+    .bubble {
+      max-width: 78%;
+      padding: 10px 14px;
+      border-radius: 16px;
+      font-size: 13.5px;
+      line-height: 1.6;
+    }
+
+    .msg-row.bot .bubble {
+      background: #fff;
+      color: #222;
+      border: 1px solid #ececec;
+      border-bottom-left-radius: 4px;
+    }
+
+    .msg-row.user .bubble {
+      background: #1a1a1a;
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+
+    /* TYPING */
+    .typing-dots {
+      display: flex; gap: 4px; align-items: center; padding: 4px 0;
+    }
+    .typing-dots span {
+      width: 6px; height: 6px; background: #bbb; border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce { 0%,80%,100%{opacity:.2;transform:scale(.8)} 40%{opacity:1;transform:scale(1)} }
+
+    /* SUGGESTIONS */
+    .suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 10px 14px;
+      border-top: 1px solid #f0f0f0;
+      background: #fff;
+      flex-shrink: 0;
+    }
+
+    .sug {
+      font-size: 12px;
+      padding: 6px 13px;
+      border-radius: 20px;
+      border: 1px solid #d4a017;
+      color: #d4a017;
+      background: none;
+      cursor: pointer;
+      font-family: 'Segoe UI', sans-serif;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .sug:hover { background: #d4a017; color: #fff; }
+
+    /* INPUT BAR */
+    .input-bar {
+      display: flex;
+      gap: 8px;
+      padding: 10px 14px;
+      border-top: 1px solid #ececec;
+      background: #fff;
+      flex-shrink: 0;
+    }
+
+    .input-bar input {
+      flex: 1;
+      border: 1px solid #ddd;
+      border-radius: 22px;
+      padding: 9px 16px;
+      font-size: 13px;
+      outline: none;
+      color: #222;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .input-bar input:focus { border-color: #d4a017; }
+    .input-bar input::placeholder { color: #bbb; }
+
+    .send-btn {
+      width: 38px; height: 38px;
+      background: #d4a017;
+      border: none; border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .send-btn:hover { background: #b8891a; }
+    .send-btn:active { transform: scale(0.92); }
+    .send-btn:disabled { opacity: 0.4; cursor: default; }
+
+    .send-btn svg { width: 15px; height: 15px; }
+
+    .file-warning {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #7d5a00;
+      line-height: 1.6;
+      display: none;
+    }
+    .file-warning code {
+      background: #ffe69c;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+      font-size: 11px;
+      color: #4caf50;
+      text-align: center;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- FILE:// WARNING -->
+  <div class="file-warning" id="fileWarning">
+    ⚠️ <strong>Open via a local server, not as a file.</strong><br>
+    Browsers block API calls from <code>file://</code> URLs (CORS policy).<br>
+    In your project folder, run: <code>python -m http.server 8000</code><br>
+    Then open <strong>http://localhost:8000</strong> in your browser.
+  </div>
+
+  <!-- API KEY INPUT -->
+  <div class="api-box">
+    <input type="password" id="apiKey" placeholder="Paste your Google Gemini API key (AIza...)" />
+    <button onclick="saveKey()">Save</button>
+  </div>
+  <div class="key-saved" id="keySaved">✓ API key saved — chatbot is ready!</div>
+  <div class="api-label">
+    Free key: <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> — no credit card needed.<br>
+    Your key is stored locally in your browser only.
+  </div>
+
+  <!-- CHAT -->
+  <div class="chat">
+    <div class="header">
+      <div class="header-icon">✂</div>
+      <div class="header-info">
+        <div class="header-name">Fresh Cuts Barbershop</div>
+        <div class="header-status"><div class="status-dot"></div>AI Assistant · Always online</div>
+      </div>
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="msg-row bot">
+        <div class="bot-av">✂</div>
+        <div class="bubble">Hey! 👋 Welcome to <strong>Fresh Cuts</strong>. I'm your AI assistant — I can help you book an appointment, check prices, or answer any questions. What can I do for you?</div>
+      </div>
+    </div>
+
+    <div class="suggestions" id="suggestions">
+      <button class="sug" onclick="quickSend('Book an appointment')">📅 Book appointment</button>
+      <button class="sug" onclick="quickSend('What are your prices?')">💈 Prices</button>
+      <button class="sug" onclick="quickSend('What are your opening hours?')">🕐 Hours</button>
+      <button class="sug" onclick="quickSend('Where are you located?')">📍 Location</button>
+    </div>
+
+    <div class="input-bar">
+      <input type="text" id="userInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendMessage()" />
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+        <svg viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M13 1L8.5 13L6.5 8.5L2 6.5L13 1Z" fill="white"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ─── Barbershop context injected into every request ───────────────────────
+  const SYSTEM_PROMPT = `You are the friendly AI assistant for Fresh Cuts Barbershop. You help customers with bookings, pricing, and general questions about the shop.
+
+Shop details:
+- Name: Fresh Cuts Barbershop
+- Location: 22 Market Street, 5 min walk from city centre
+- Hours: Monday to Friday 9am–7pm, Saturday 9am–6pm, closed Sunday
+- Barbers: Jake, Leo, and Sam — all experienced
+
+Services & Prices:
+- Haircut: £12 (30 mins)
+- Skin Fade: £15 (35 mins)
+- Beard Trim: £8 (15 mins)
+- Haircut + Beard: £18 (45 mins)
+- Kids Cut (under 12): £10 (20 mins)
+- Hot Towel Shave: £15 (30 mins)
+
+Booking info:
+- Walk-ins are welcome
+- Weekends get busy so booking ahead is recommended
+- To book, customers can call 07700 900 123 or book online at freshcuts.co.uk
+
+Your personality: warm, casual, and helpful. Keep replies short and conversational — 1 to 3 sentences max unless listing prices or services. Never use jargon. Sound like a real person working at the shop.`;
+
+  // ─── State ─────────────────────────────────────────────────────────────────
+  // Gemini uses a "contents" array where each turn has a "role" (user/model)
+  // and "parts" array. We build this from the conversation history.
+  let conversationHistory = []; // [{role: "user"|"model", parts: [{text: "..."}]}]
+
+  // Show CORS warning if opened directly as a file
+  if (location.protocol === 'file:') {
+    document.getElementById('fileWarning').style.display = 'block';
+  }
+
+  // Clear any old Anthropic key that may have been saved by a previous version
+  localStorage.removeItem('freshcuts_api_key');
+
+  let apiKey = localStorage.getItem('freshcuts_gemini_key') || '';
+
+  // Reject any accidentally loaded Anthropic key (starts with sk-ant)
+  if (apiKey.startsWith('sk-ant')) {
+    apiKey = '';
+    localStorage.removeItem('freshcuts_gemini_key');
+  }
+
+  if (apiKey) {
+    document.getElementById('apiKey').value = apiKey;
+    document.getElementById('keySaved').style.display = 'block';
+  }
+
+  // ─── Save key ──────────────────────────────────────────────────────────────
+  function saveKey() {
+    const val = document.getElementById('apiKey').value.trim();
+    if (!val) { alert('Please paste your Gemini API key first.'); return; }
+    if (val.startsWith('sk-ant')) {
+      alert('That looks like an Anthropic key (sk-ant-...).\nThis chatbot uses Google Gemini — get a free key at aistudio.google.com/apikey');
+      return;
+    }
+    apiKey = val;
+    localStorage.setItem('freshcuts_gemini_key', val);
+    document.getElementById('keySaved').style.display = 'block';
+  }
+
+  // ─── Quick send from suggestion buttons ───────────────────────────────────
+  function quickSend(text) {
+    document.getElementById('userInput').value = text;
+    sendMessage();
+  }
+
+  // ─── Render a message bubble ───────────────────────────────────────────────
+  function addMessage(role, text) {
+    const messages = document.getElementById('messages');
+    const row = document.createElement('div');
+    row.className = 'msg-row ' + role;
+
+    if (role === 'bot') {
+      row.innerHTML = `
+        <div class="bot-av">✂</div>
+        <div class="bubble">${text}</div>
+      `;
+    } else {
+      row.innerHTML = `<div class="bubble">${text}</div>`;
+    }
+
+    messages.appendChild(row);
+    messages.scrollTop = messages.scrollHeight;
+    return row;
+  }
+
+  function showTyping() {
+    const messages = document.getElementById('messages');
+    const row = document.createElement('div');
+    row.className = 'msg-row bot';
+    row.id = 'typing-indicator';
+    row.innerHTML = `
+      <div class="bot-av">✂</div>
+      <div class="bubble">
+        <div class="typing-dots">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    `;
+    messages.appendChild(row);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function removeTyping() {
+    const el = document.getElementById('typing-indicator');
+    if (el) el.remove();
+  }
+
+  function clearSuggestions() {
+    document.getElementById('suggestions').innerHTML = '';
+  }
+
+  // ─── Main send logic ───────────────────────────────────────────────────────
+  async function sendMessage() {
+    const input   = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const text    = input.value.trim();
+
+    if (!text) return;
+
+    if (!apiKey) {
+      alert('Please save your Gemini API key at the top first!\nGet a free key at aistudio.google.com/apikey');
+      return;
+    }
+
+    input.value = '';
+    sendBtn.disabled = true;
+    clearSuggestions();
+
+    // Show user message
+    addMessage('user', text);
+
+    // Add to history (Gemini role: "user")
+    conversationHistory.push({ role: 'user', parts: [{ text }] });
+
+    showTyping();
+
+    try {
+      // gemini-2.5-flash has the most widely available free tier
+      const MODEL  = 'gemini-2.5-flash';
+      const url    = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          // Inject shop context as a system instruction
+          system_instruction: {
+            parts: [{ text: SYSTEM_PROMPT }]
+          },
+          contents: conversationHistory,
+          generationConfig: {
+            maxOutputTokens: 300,
+            temperature: 0.7
+          }
+        })
+      });
+
+      const data = await response.json();
+      removeTyping();
+
+      // Handle API-level errors (bad key, quota, etc.)
+      if (data.error) {
+        const msg = data.error.message || 'Unknown error';
+        addMessage('bot', `Hmm, something went wrong: ${msg}`);
+        // Remove the last user turn from history so they can retry
+        conversationHistory.pop();
+      } else {
+        // Extract the reply text from Gemini's response structure
+        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I didn't catch that — could you try again?";
+
+        // Add assistant turn to history (Gemini role: "model")
+        conversationHistory.push({ role: 'model', parts: [{ text: reply }] });
+
+        addMessage('bot', reply.replace(/\n/g, '<br>'));
+      }
+
+    } catch (err) {
+      removeTyping();
+      // Most likely cause: opened as file:// instead of http://localhost
+      const isFileProtocol = location.protocol === 'file:';
+      if (isFileProtocol) {
+        addMessage('bot', `⚠️ <strong>CORS error</strong> — you're opening this as a local file.<br><br>Run a local server instead:<br><code>python -m http.server 8000</code><br>Then open <a href="http://localhost:8000" target="_blank">localhost:8000</a>`);
+      } else {
+        addMessage('bot', 'Sorry, I had a connection issue. Please check your API key and try again!');
+      }
+      conversationHistory.pop();
+    }
+
+    sendBtn.disabled = false;
+    input.focus();
+  }
+</script>
+
+</body>
+</html>
