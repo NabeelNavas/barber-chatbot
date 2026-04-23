@@ -462,8 +462,8 @@ Your personality: warm, casual, and helpful. Keep replies short and conversation
     showTyping();
 
     try {
-      // gemini-2.5-flash-preview-04-17 has the most widely available free tier
-      const MODEL  = 'gemini-2.5-flash-preview-04-17';
+      // gemini-2.5-flash has the most widely available free tier
+      const MODEL  = 'gemini-2.5-flash';
       const url    = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
 
       const response = await fetch(url, {
